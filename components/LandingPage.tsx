@@ -15,16 +15,31 @@ import { CheckoutButton } from "@/components/CheckoutButton";
 import { Logo } from "@/components/Logo";
 import { ProductGallery } from "@/components/ProductGallery";
 import { QuantityPicker } from "@/components/QuantityPicker";
+import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { formatMoney, product } from "@/lib/product";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function LandingPage() {
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState(product.sizes[1]);
   const [selectedColor, setSelectedColor] = useState(product.colors[0].name);
+  const trackedViewContentRef = useRef(false);
   const total = product.offerPrice * quantity;
   const selectedColorImage =
     product.colors.find((color) => color.name === selectedColor)?.image || product.heroImage;
+
+  useEffect(() => {
+    if (trackedViewContentRef.current) return;
+
+    trackedViewContentRef.current = true;
+    trackMetaPixelEvent("ViewContent", {
+      content_ids: [product.name],
+      content_name: product.name,
+      content_type: "product",
+      currency: product.currency,
+      value: product.offerPrice,
+    });
+  }, []);
 
   return (
     <main className="min-h-screen bg-ivory text-espresso">
@@ -32,6 +47,12 @@ export function LandingPage() {
         <Logo />
         <a
           href={`tel:${product.supportPhone}`}
+          onClick={() => {
+            trackMetaPixelEvent("Contact", {
+              content_name: product.name,
+              contact_channel: "phone",
+            });
+          }}
           className="hidden min-h-11 items-center rounded border border-espresso/15 bg-white px-4 text-sm font-bold text-espresso shadow-sm transition hover:border-cognac sm:inline-flex"
         >
           Call {product.supportPhone}

@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { formatMoney, product } from "@/lib/product";
 
 function ThankYouContent() {
@@ -15,6 +16,27 @@ function ThankYouContent() {
   const orderId = params.get("orderId");
   const selectedSize = params.get("selectedSize");
   const selectedColor = params.get("selectedColor");
+  const trackedPurchaseRef = useRef(false);
+
+  useEffect(() => {
+    if (trackedPurchaseRef.current || !orderId) return;
+
+    trackedPurchaseRef.current = true;
+    trackMetaPixelEvent(
+      "Purchase",
+      {
+        content_ids: [productName],
+        content_name: productName,
+        content_type: "product",
+        currency: product.currency,
+        value: totalPrice,
+        num_items: quantity,
+        selected_size: selectedSize || undefined,
+        selected_color: selectedColor || undefined,
+      },
+      { eventID: orderId },
+    );
+  }, [orderId, productName, quantity, selectedColor, selectedSize, totalPrice]);
 
   return (
     <main className="grain min-h-screen px-5 py-6 sm:px-8">

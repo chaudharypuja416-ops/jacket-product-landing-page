@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useMemo, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Loader2, LockKeyhole, ShoppingBag } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { formatMoney, product } from "@/lib/product";
 
 type FieldErrors = Record<string, string[] | undefined>;
@@ -21,6 +22,7 @@ function CheckoutForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const trackedCheckoutRef = useRef(false);
 
   const orderSummary = useMemo(
     () => ({
@@ -33,6 +35,22 @@ function CheckoutForm() {
     }),
     [pricePerPiece, productName, quantity, selectedColor, selectedSize, totalPrice],
   );
+
+  useEffect(() => {
+    if (trackedCheckoutRef.current) return;
+
+    trackedCheckoutRef.current = true;
+    trackMetaPixelEvent("InitiateCheckout", {
+      content_ids: [productName],
+      content_name: productName,
+      content_type: "product",
+      currency: product.currency,
+      value: totalPrice,
+      num_items: quantity,
+      selected_size: selectedSize,
+      selected_color: selectedColor,
+    });
+  }, [productName, quantity, selectedColor, selectedSize, totalPrice]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
